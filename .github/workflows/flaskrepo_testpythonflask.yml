@@ -29,28 +29,13 @@ jobs:
           tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
           subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
 
-      - name: Retrieve and Decode SSH Key
+      - name: Retrieve SSH Private Key from Azure Key Vault
         run: |
+          mkdir -p ~/.ssh
           SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
           echo "::add-mask::$SECRET_VALUE"
-          echo "$SECRET_VALUE" | base64 --decode > ~/.ssh/id_rsa
+          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
-
-      - name: Debug SSH Key Formatting
-        run: |
-          echo "Checking file existence:"
-          ls -la ~/.ssh/
-          
-          echo "Checking file type:"
-          file ~/.ssh/id_rsa
-          
-          echo "Checking for Windows line endings (should not see \r):"
-          cat -A ~/.ssh/id_rsa
-
-      - name: Convert SSH Key to OpenSSH Format (if needed)
-        run: |
-          ssh-keygen -p -m PEM -f ~/.ssh/id_rsa -N "" -q || true
 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
