@@ -16,11 +16,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read 
+      contents: read
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Parent Repository with Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: 'Az CLI login'
         uses: azure/login@v2
@@ -29,34 +33,14 @@ jobs:
           tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
           subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
 
-      # - name: Retrieve SSH Private Key from Azure Key Vault
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
-      #     echo "::add-mask::$SECRET_VALUE"
-
-      #     echo "$SECRET_VALUE" > ~/.ssh/id_rsa
-      #     chmod 600 ~/.ssh/id_rsa
-      #     ls -la ~/.ssh
-      #     file ~/.ssh/id_rsa
-
       - name: Retrieve SSH Private Key from Azure Key Vault
         run: |
           mkdir -p ~/.ssh
           SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
           echo "::add-mask::$SECRET_VALUE"
-
           echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-          ls -la ~/.ssh
-          file ~/.ssh/id_rsa
-
-      - name: Debug SSH Key Formatting (Remove After Testing)
-        run: |
-          echo "Checking for Windows line endings (should not see \r):"
-          cat -A ~/.ssh/id_rsa
-          file ~/.ssh/id_rsa
 
       - name: Start SSH Agent and Add Key
         run: |
@@ -71,7 +55,10 @@ jobs:
           git config --global user.email "suneetha2201@gmail.com"
           git config --global user.name "suni170"
 
-      # Use the stored secret
+      - name: Update and Verify Git Submodules
+        run: |
+          git submodule update --init --recursive
+          git submodule status
 
       - name: Set up Python version
         uses: actions/setup-python@v5
@@ -82,12 +69,12 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-      
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+      - name: Zip artifact for deployment (Including Submodules)
+        run: zip -r release.zip . -x '*.git*' 'venv/*'
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -95,7 +82,6 @@ jobs:
           name: python-app
           path: |
             release.zip
-            !venv/
 
   deploy:
     runs-on: ubuntu-latest
