@@ -9,6 +9,13 @@ on:
     branches:
       - Flaskrepo
   workflow_dispatch:
+  
+env:
+  APP_ENV: dev
+  AZURE_WEBAPP_NAME: cylent-nav-dev
+  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+  GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+  ZIPFILE: package.zip
 
 jobs:
   build:
