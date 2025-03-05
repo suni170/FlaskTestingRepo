@@ -33,6 +33,7 @@ jobs:
           SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
           echo "::add-mask::$SECRET_VALUE"  # Hides secret from logs
           echo "SECRET_VALUE=$SECRET_VALUE" >> $GITHUB_ENV
+          echo "$SECRET_VALUE"
  
       - name: Setup SSH for Cloning
         run: |
