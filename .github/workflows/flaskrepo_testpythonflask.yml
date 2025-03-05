@@ -36,24 +36,16 @@ jobs:
       - name: Retrieve Secret from Azure Key Vault
         id: get-secret
         run: |
-          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv | tr -d '\r' | sed 's/\\n/\n/g')
+          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv | tr -d '\r' | awk '{gsub(/\\n/,"\n")}1')
           echo "::add-mask::$SECRET_VALUE"
-          mkdir -p ~/.ssh
-          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-      
-      - name: Add Key to SSH Agent
-        run: |
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
-            - name: Print Secret Value (DEBUG - REMOVE LATER)
-              run: |
-                  echo "Secret value: $SECRET_VALUE"
+          echo "SECRET_VALUE=$SECRET_VALUE" >> $GITHUB_ENV
+
 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ env.SECRET_VALUE }}
+
             
       - name: Set up Python version
         uses: actions/setup-python@v5
