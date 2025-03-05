@@ -97,4 +97,4 @@ jobs:
         with:
           app-name: 'testpythonflask'
           package: .  # Ensure files are being deployed
-          slot-name: 'Production'
+        continue-on-error: true
