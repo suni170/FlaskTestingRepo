@@ -34,13 +34,24 @@ jobs:
           mkdir -p ~/.ssh
           SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
           echo "::add-mask::$SECRET_VALUE"
-          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+
+          # Ensure proper newlines are preserved
+          echo "$SECRET_VALUE" | awk '{gsub(/\\n/,"\n")}1' > ~/.ssh/id_rsa
+
+          chmod 600 ~/.ssh/id_rsa  # Set correct permissions
+          ls -la ~/.ssh  # Debugging: Check if file exists
+          file ~/.ssh/id_rsa  # Debugging: Verify file type
+
+      - name: Debug SSH Key Formatting (Remove After Testing)
+        run: |
+          echo "Checking for Windows line endings (should not see \r):"
+          cat -A ~/.ssh/id_rsa
 
       - name: Start SSH Agent and Add Key
         run: |
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
+
       # Use the stored secret
 
       - name: Set up Python version
