@@ -36,12 +36,14 @@ jobs:
       - name: Retrieve Secret from Azure Key Vault
         id: get-secret
         run: |
+          mkdir -p ~/.ssh  # Ensure the .ssh directory exists
           SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv | tr -d '\r' | awk '{gsub(/\\n/,"\n")}1')
           echo "::add-mask::$SECRET_VALUE"
           echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ls -la ~/.ssh/
-          cat ~/.ssh/id_rsa  # Debug - REMOVE LATER
+          ls -la ~/.ssh/  # Debug step to check if the file exists
+          cat ~/.ssh/id_rsa  # Debug step - REMOVE LATER
+
 
       - name: Add SSH Key to Agent
         run: |
