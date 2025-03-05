@@ -12,7 +12,6 @@ on:
   
 env:
   APP_ENV: dev
-  AZURE_WEBAPP_NAME: cylent-nav-dev
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
   ZIPFILE: package.zip
@@ -25,36 +24,15 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
- 
-      - name: 'Az CLI login'
-        uses: azure/login@v2
-        with:
-          client-id: "577b7c0d-8d6e-4402-a074-c2ccf38ad68b"
-          tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
-          subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
- 
-      - name: Retrieve Secret from Azure Key Vault
-        id: get-secret
-        run: |
-          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv | tr -d '\r' | sed 's/\\n/\n/g')
-          echo "::add-mask::$SECRET_VALUE"
-          mkdir -p ~/.ssh
-          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-      
-      - name: Add Key to SSH Agent
-        run: |
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
-            - name: Print Secret Value (DEBUG - REMOVE LATER)
-              run: |
-                  echo "Secret value: $SECRET_VALUE"
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
+ 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
         with:
-          ssh-private-key: ${{ env.SECRET_VALUE }}
+          ssh-private-key: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
+
             
       - name: Set up Python version
         uses: actions/setup-python@v5
