@@ -70,17 +70,6 @@ jobs:
       contents: read
 
     steps:
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.AZURE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          echo "SSH key added successfully."
-
-      - name: Test SSH Connection
-          ssh -o "StrictHostKeyChecking=no" -T git@github.com
-
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
@@ -102,20 +91,12 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
 
-      - name: Restart Web App Before Deployment
-        run: |
-          az webapp restart --resource-group AIResources --name testpythonflask
-          sleep 30
-
-      - name: Set Startup Command
-        run: |
-          az webapp config set --resource-group AIResources --name testpythonflask --startup-file "gunicorn --bind 0.0.0.0:8000 app:app"
-
-      
-      - name: Deploy to Azure Web App
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
           app-name: 'testpythonflask'
-          package: .  # Ensure correct package format
+          package: .  # Ensure files are being deployed
+          slot-name: 'Production'
         continue-on-error: true  # Ignore minor errors
+
