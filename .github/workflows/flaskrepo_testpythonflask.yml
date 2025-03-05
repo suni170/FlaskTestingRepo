@@ -1,6 +1,4 @@
-# GitHub Actions workflow for deploying a Python Flask app to Azure Web App
-
-name: Build and Deploy Python App to Azure - testpythonflask
+name: Build and Deploy Python Flask App to Azure
 
 on:
   push:
@@ -34,6 +32,9 @@ jobs:
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
 
+      - name: Test SSH Connection
+        run: ssh -vT git@github.com  # Debugging SSH connection
+
       - name: Set up Python Version
         uses: actions/setup-python@v5
         with:
@@ -43,10 +44,11 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
+
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      # Optional: Add step to run tests (e.g., PyTest)
+      # Optional: Run tests before deployment
       # - name: Run Tests
       #   run: pytest
 
@@ -79,7 +81,7 @@ jobs:
           echo "SSH key added successfully."
 
       - name: Test SSH Connection
-        run: ssh -vT git@github.com  # -v for detailed output
+        run: ssh -vT git@github.com  # Debug SSH
 
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
@@ -116,11 +118,4 @@ jobs:
         id: deploy-to-webapp
         with:
           app-name: 'testpythonflask'
-          package: release.zip 
-      # - name: Deploy to Azure Web App
-      #   uses: azure/webapps-deploy@v3
-      #   id: deploy-to-webapp
-      #   with:
-      #     app-name: 'testpythonflask'
-      #     package: .  # Ensure correct package format
-      #   #continue-on-error: true  # Ignore minor errors
+          package: release.zip
