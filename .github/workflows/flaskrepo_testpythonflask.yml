@@ -102,6 +102,30 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
+      - name: Retrieve SSH Private Key from Azure Key Vault
+        run: |
+          mkdir -p ~/.ssh
+          SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
+          echo "::add-mask::$SECRET_VALUE"  # Hide sensitive data in logs
+          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # Ensure GitHub is trusted in SSH
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Start SSH Agent and Add Key
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+      - name: Test SSH Connection to GitHub
+        run: |
+          ssh -T git@github.com || true  # Will always succeed (expected behavior)
+
+      - name: Set Git User for SSH
+        run: |
+          git config --global user.email "suneetha2201@gmail.com"
+          git config --global user.name "suni170"
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
