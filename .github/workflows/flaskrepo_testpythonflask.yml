@@ -103,12 +103,10 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      - name: 'Az CLI login'
-        uses: azure/login@v2
-        with:
-          client-id: "577b7c0d-8d6e-4402-a074-c2ccf38ad68b"
-          tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
-          subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
+      - name: 'Azure Login'
+        run: |
+          az login --service-principal -u  ${{ secrets.CLIENT_ID }} -p  ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
+
 
       - name: Retrieve SSH Private Key from Azure Key Vault
         run: |
@@ -119,15 +117,15 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           # Ensure GitHub is trusted in SSH
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Start SSH Agent and Add Key
+        run: |
+          eval "$(ssh-agent -k)"  # Kill existing agent
+          eval "$(ssh-agent -s)"  # Start a new agent
+          ssh-add ~/.ssh/id_rsa   # Add the private key
 
       - name: Check SSH Key Length
         run: |
           echo "SSH key length: $(wc -c < ~/.ssh/id_rsa)"
-        
-      - name: Start SSH Agent and Add Key
-        run: |
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
 
       - name: Test SSH Connection to GitHub
         run: |
