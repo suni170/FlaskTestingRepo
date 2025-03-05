@@ -55,14 +55,14 @@ jobs:
           # Store key path as an environment variable
           echo "SSH_PRIVATE_KEY_PATH=~/.ssh/id_rsa" >> $GITHUB_ENV
 
+      - name: Print Secret Value (DEBUG - REMOVE LATER)
+        run: |
+            echo "Secret value: $SECRET_VALUE"
+
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ env.SSH_PRIVATE_KEY_PATH }}
-
-      - name: Print Secret Value (DEBUG - REMOVE LATER)
-        run: |
-            echo "Secret value: $SECRET_VALUE"
             
       - name: Set up Python version
         uses: actions/setup-python@v5
