@@ -1,15 +1,13 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+# GitHub Actions workflow for deploying a Python Flask app to Azure Web App
 
-name: Build and deploy Python app to Azure Web App - testpythonflask
+name: Build and Deploy Python App to Azure - testpythonflask
 
 on:
   push:
     branches:
-      - Flaskrepo
-  workflow_dispatch:
-  
+      - Flaskrepo  # Runs when changes are pushed to this branch
+  workflow_dispatch:  # Allows manual triggering
+
 env:
   APP_ENV: dev
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
@@ -20,45 +18,43 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read 
+      contents: read
       id-token: write
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
- 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
 
-            
-      - name: Set up Python version
+      - name: Set up Python Version
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
- 
-      - name: Create and start virtual environment
+
+      - name: Create and Start Virtual Environment
         run: |
           python -m venv venv
           source venv/bin/activate
-      
-      - name: Install dependencies
+
+      - name: Install Dependencies
         run: pip install -r requirements.txt
-        
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+      # Optional: Add step to run tests (e.g., PyTest)
+      # - name: Run Tests
+      #   run: pytest
 
-      - name: Upload artifact for deployment jobs
+      - name: Zip Artifact for Deployment
+        run: zip -r release.zip . -x "venv/*" ".git/*" ".github/*" "*.yml"
+
+      - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -67,30 +63,28 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write  # Required for JWT authentication
+      contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download Artifact from Build Job
         uses: actions/download-artifact@v4
         with:
           name: python-app
 
-      - name: Unzip artifact for deployment
+      - name: Unzip Artifact for Deployment
         run: unzip release.zip
 
-      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1445CB15A781497B89E79C5719E169D1 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
           app-name: 'testpythonflask'
           slot-name: 'Production'
-          
