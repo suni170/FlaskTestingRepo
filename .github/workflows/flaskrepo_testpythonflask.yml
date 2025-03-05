@@ -1,13 +1,15 @@
-# GitHub Actions workflow for deploying a Python Flask app to Azure Web App
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
 
-name: Build and Deploy Python App to Azure - testpythonflask
+name: Build and deploy Python app to Azure Web App - testpythonflask
 
 on:
   push:
     branches:
-      - Flaskrepo  # Runs when changes are pushed to this branch
-  workflow_dispatch:  # Allows manual triggering
-
+      - Flaskrepo
+  workflow_dispatch:
+  
 env:
   APP_ENV: dev
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
@@ -18,46 +20,66 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read 
       id-token: write
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup SSH for Private Repo Access
+      - uses: actions/checkout@v4
+ 
+      - name: 'Az CLI login'
+        uses: azure/login@v2
+        with:
+          client-id: "577b7c0d-8d6e-4402-a074-c2ccf38ad68b"
+          tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
+          subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
+ 
+      - name: Retrieve Secret from Azure Key Vault
+        id: get-secret
         run: |
+          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv | tr -d '\r' | sed 's/\\n/\n/g')
+          echo "::add-mask::$SECRET_VALUE"
           mkdir -p ~/.ssh
-          echo "${{ secrets.AZURE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
+      
+      - name: Add Key to SSH Agent
+        run: |
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
+            - name: Print Secret Value (DEBUG - REMOVE LATER)
+              run: |
+                  echo "Secret value: $SECRET_VALUE"
 
-      - name: Set up Python Version
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ env.SECRET_VALUE }}
+            
+      - name: Set up Python version
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Create and Start Virtual Environment
+ 
+      - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
-      - name: Install Dependencies
+      
+      - name: Install dependencies
         run: pip install -r requirements.txt
+        
+      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
-      # Optional: Add step to run tests (e.g., PyTest)
-      # - name: Run Tests
-      #   run: pytest
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
 
-      - name: Zip Artifact for Deployment
-        run: zip -r release.zip . -x "venv/*" ".git/*" ".github/*" "*.yml"
-
-      - name: Upload Artifact for Deployment Jobs
+      - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: release.zip
+          path: |
+            release.zip
+            !venv/
 
   deploy:
     runs-on: ubuntu-latest
@@ -66,8 +88,8 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
@@ -78,12 +100,7 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      - name: Debug Deployment
-        run: |
-          echo "Listing files before deployment..."
-          ls -la
-          pwd
-
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -96,7 +113,5 @@ jobs:
         id: deploy-to-webapp
         with:
           app-name: 'testpythonflask'
-          package: .  # Ensure files are being deployed
           slot-name: 'Production'
-        continue-on-error: true  # Ignore minor errors
-
+          
