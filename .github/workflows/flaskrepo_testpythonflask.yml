@@ -70,6 +70,17 @@ jobs:
       contents: read
 
     steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          echo "SSH key added successfully."
+
+      - name: Test SSH Connection
+        run: ssh -vT git@github.com  # -v for detailed output
+
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
@@ -106,7 +117,6 @@ jobs:
         with:
           app-name: 'testpythonflask'
           package: release.zip 
-          
       # - name: Deploy to Azure Web App
       #   uses: azure/webapps-deploy@v3
       #   id: deploy-to-webapp
