@@ -103,22 +103,23 @@ jobs:
         run: unzip release.zip
 
       - name: 'Azure Login'
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1445CB15A781497B89E79C5719E169D1 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
-          
+        run: |
+          az login --service-principal -u ${{ secrets.AZUREAPPSERVICE_CLIENTID_1445CB15A781497B89E79C5719E169D1 }} -p ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }} --tenant ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
+
       - name: Retrieve SSH Private Key from Azure Key Vault
         run: |
           mkdir -p ~/.ssh
           SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
-          echo "::add-mask::$SECRET_VALUE"  # Hide sensitive data in logs
+          echo "::add-mask::$SECRET_VALUE"  # Masking the secret in logs
           echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           # Ensure GitHub is trusted in SSH
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+      - name: Check SSH Key Length
+        run: |
+          echo "SSH key length: $(wc -c < ~/.ssh/id_rsa)"
+        
       - name: Start SSH Agent and Add Key
         run: |
           eval "$(ssh-agent -s)"
