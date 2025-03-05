@@ -55,7 +55,7 @@ jobs:
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
         with:
-        ssh-private-key: ${{ env.SECRET_VALUE }}  # Use the stored secret
+          ssh-private-key: ${{ env.SECRET_VALUE }}  # Use the stored secret
 
       - name: Set up Python version
         uses: actions/setup-python@v5
