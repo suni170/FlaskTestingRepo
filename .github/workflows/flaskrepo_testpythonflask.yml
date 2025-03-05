@@ -37,32 +37,24 @@ jobs:
       - name: Retrieve Secret from Azure Key Vault
         id: get-secret
         run: |
-          # Get secret from Azure Key Vault
-          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
-          
-          # Mask secret in logs
+          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv | tr -d '\r' | sed 's/\\n/\n/g')
           echo "::add-mask::$SECRET_VALUE"
-      
-          # Ensure .ssh directory exists
           mkdir -p ~/.ssh
-      
-          # Fix multiline issues and remove Windows-style line endings
-          echo "$SECRET_VALUE" | awk '{gsub(/\\n/,"\n")}1' | tr -d '\r' > ~/.ssh/id_rsa 
-      
-          # Set correct permissions
+          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
       
-          # Store key path as an environment variable
-          echo "SSH_PRIVATE_KEY_PATH=~/.ssh/id_rsa" >> $GITHUB_ENV
-
-      - name: Print Secret Value (DEBUG - REMOVE LATER)
+      - name: Add Key to SSH Agent
         run: |
-            echo "Secret value: $SECRET_VALUE"
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+            - name: Print Secret Value (DEBUG - REMOVE LATER)
+              run: |
+                  echo "Secret value: $SECRET_VALUE"
 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
         with:
-          ssh-private-key: ${{ env.SSH_PRIVATE_KEY_PATH }}
+          ssh-private-key: ${{ env.SECRET_VALUE }}
             
       - name: Set up Python version
         uses: actions/setup-python@v5
