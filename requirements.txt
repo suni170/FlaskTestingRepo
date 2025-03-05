@@ -1,2 +1,2 @@
+-r git+ssh://git@github.com:suni170/testing.git
 flask
-git+ssh://git@github.com:suni170/testing.git
