@@ -33,7 +33,7 @@ jobs:
         id: get-secret
         run: |
           mkdir -p ~/.ssh
-          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
+          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
           echo "::add-mask::$SECRET_VALUE"
           echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
