@@ -32,12 +32,10 @@ jobs:
       - name: Retrieve SSH Private Key from Azure Key Vault
         run: |
           mkdir -p ~/.ssh
-          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
+          SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
           echo "::add-mask::$SECRET_VALUE"
 
-          # Ensure proper newlines
-          echo "$SECRET_VALUE" | awk '{gsub(/\\n/,"\n")}1' > ~/.ssh/id_rsa
-
+          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ls -la ~/.ssh
           file ~/.ssh/id_rsa
@@ -45,11 +43,8 @@ jobs:
       - name: Debug SSH Key Formatting (Remove After Testing)
         run: |
           echo "Checking for Windows line endings (should not see \r):"
-          cat -A ~/.ssh/id_rsa  # Should not show ^M
-
-      - name: Convert to OpenSSH Format (If Needed)
-        run: |
-          ssh-keygen -p -m PEM -f ~/.ssh/id_rsa -N "" -q || true
+          cat -A ~/.ssh/id_rsa
+          file ~/.ssh/id_rsa
 
       - name: Start SSH Agent and Add Key
         run: |
