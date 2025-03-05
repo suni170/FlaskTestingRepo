@@ -39,11 +39,9 @@ jobs:
           SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
           echo "::add-mask::$SECRET_VALUE"
           mkdir -p ~/.ssh
-          echo "$SECRET_VALUE" | sed 's/\\n/\n/g' | tr -d '\r' > ~/.ssh/id_rsa
+          echo "$SECRET_VALUE" | base64 --decode > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          echo "SECRET_VALUE<<EOF" >> $GITHUB_OUTPUT
-          echo "$SECRET_VALUE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+
       
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.7.0
