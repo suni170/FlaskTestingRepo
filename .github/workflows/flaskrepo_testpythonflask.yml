@@ -14,16 +14,37 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read 
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
-
+ 
+      - name: 'Az CLI login'
+        uses: azure/login@v1
+        with:
+          client-id: "577b7c0d-8d6e-4402-a074-c2ccf38ad68b"
+          tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
+          subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
+ 
+      - name: Retrieve Secret from Azure Key Vault
+        id: get-secret
+        run: |
+          SECRET_VALUE=$(az keyvault secret show --name "ssh-key" --vault-name "demopython" --query "value" -o tsv)
+          echo "::add-mask::$SECRET_VALUE"  # Hides secret from logs
+          echo "SECRET_VALUE=$SECRET_VALUE" >> $GITHUB_ENV
+ 
+      - name: Setup SSH for Cloning
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+ 
       - name: Create and start virtual environment
         run: |
           python -m venv venv
