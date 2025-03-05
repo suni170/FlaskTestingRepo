@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
  
       - name: 'Az CLI login'
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: "577b7c0d-8d6e-4402-a074-c2ccf38ad68b"
           tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
