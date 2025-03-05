@@ -6,12 +6,11 @@ on:
   push:
     branches:
       - Flaskrepo  # Runs when changes are pushed to this branch
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 env:
   APP_ENV: dev
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-  GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
   ZIPFILE: package.zip
 
 jobs:
@@ -28,15 +27,11 @@ jobs:
       - name: Setup SSH for Private Repo Access
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.AZURE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
-
-      - name: Test SSH Connection
-        run: ssh -T git@github.com || true
-
 
       - name: Set up Python Version
         uses: actions/setup-python@v5
@@ -45,18 +40,16 @@ jobs:
 
       - name: Create and Start Virtual Environment
         run: |
-          python -m venv venv
-          source venv/bin/activate
+          python -m venv antenv
+          source antenv/bin/activate
 
-      - name: Install Dependencies
+      - name: Install Dependencies (Including Private Repo via SSH)
+        env:
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
         run: pip install -r requirements.txt
 
-      # Optional: Add step to run tests (e.g., PyTest)
-      # - name: Run Tests
-      #   run: pytest
-
       - name: Zip Artifact for Deployment
-        run: zip -r release.zip . -x "venv/*" ".git/*" ".github/*" "*.yml"
+        run: zip -r release.zip . -x ".git/*" ".github/*" "*.yml" "__pycache__/*"
 
       - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-artifact@v4
@@ -71,7 +64,7 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write  # Required for JWT authentication
+      id-token: write
       contents: read
 
     steps:
@@ -83,12 +76,21 @@ jobs:
       - name: Unzip Artifact for Deployment
         run: unzip release.zip
 
+      - name: Setup SSH for Azure Deployment (Same SSH Key)
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1445CB15A781497B89E79C5719E169D1 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
+         client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1445CB15A781497B89E79C5719E169D1 }}
+         tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
+         subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
  
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -97,4 +99,4 @@ jobs:
           app-name: 'testpythonflask'
           slot-name: 'Production'
           package: release.zip
-          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 120 app:app'
+          startup-command: 'source antenv/bin/activate && gunicorn --bind=0.0.0.0 app:app'
