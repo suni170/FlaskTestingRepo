@@ -76,7 +76,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt --target packages
-
       - name: Copy Installed Packages
         run: cp -r packages/* .
 
@@ -119,9 +118,7 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
 
-      #- name: Set Azure App Setting to Disable Build During Deployment
-      #   run: az webapp config appsettings set --name testpythonflask --resource-group AIResources --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
- 
+
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
@@ -129,5 +126,3 @@ jobs:
           app-name: 'testpythonflask'
           slot-name: 'Production'
           package: release.zip  
-
- 
