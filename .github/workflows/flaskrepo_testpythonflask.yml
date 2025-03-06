@@ -115,21 +115,16 @@ jobs:
           echo "::add-mask::$SECRET_VALUE"  # Masking the secret in logs
           echo "$SECRET_VALUE" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Ensure GitHub is trusted in SSH
           ssh-keyscan github.com >> ~/.ssh/known_hosts
       - name: Start SSH Agent and Add Key
         run: |
-          eval "$(ssh-agent -k)"  # Kill existing agent
-          eval "$(ssh-agent -s)"  # Start a new agent
-          ssh-add ~/.ssh/id_rsa   # Add the private key
-
-      - name: Check SSH Key Length
-        run: |
-          echo "SSH key length: $(wc -c < ~/.ssh/id_rsa)"
+          eval "$(ssh-agent -s)"  # Start SSH agent (Don't kill it)
+          export SSH_AUTH_SOCK=/tmp/ssh_agent.sock  # Ensure correct path
+          ssh-add ~/.ssh/id_rsa
+          ssh-add -l  # Verify key is added
 
       - name: Test SSH Connection to GitHub
-        run: |
-          ssh -T git@github.com || true  # Will always succeed (expected behavior)
+        run: ssh -T git@github.com || true  # Expected behavior
 
       - name: Set Git User for SSH
         run: |
