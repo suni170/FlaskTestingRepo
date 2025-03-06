@@ -112,7 +112,7 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
 
       - name: Set Azure App Setting to Disable Build During Deployment
-        run: az webapp config appsettings set --name testpythonflask --resource-group airesources --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+        run: az webapp config appsettings set --name testpythonflask --resource-group AIResources --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
  
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
