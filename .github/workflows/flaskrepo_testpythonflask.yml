@@ -34,12 +34,10 @@ jobs:
           tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
           subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
  
-      - name: Retrieve SSH Private Key from Azure Key Vault
+      - name: Setup SSH for GitHub
         run: |
           mkdir -p ~/.ssh
-          SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
-          echo "::add-mask::$SECRET_VALUE"
-          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
+          echo "${{ secrets.AZURE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
  
@@ -83,6 +81,8 @@ jobs:
         with:
           name: python-app
           path: release.zip
+
+
  
   deploy:
     runs-on: ubuntu-latest
