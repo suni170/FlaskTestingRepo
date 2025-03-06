@@ -19,7 +19,7 @@ env:
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
 
   ZIPFILE: package.zip
-
+ 
 jobs:
 
   build:
@@ -31,19 +31,19 @@ jobs:
       contents: read
 
       id-token: write
-
+ 
     steps:
 
       - name: Checkout Parent Repository with Submodules
 
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
         with:
 
           submodules: recursive
 
-          fetch-depth: 1  # Changed from 0 for better performance
-
+          fetch-depth: 0
+ 
       - name: 'Az CLI login'
 
         uses: azure/login@v2
@@ -55,7 +55,7 @@ jobs:
           tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
 
           subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
-
+ 
       - name: Retrieve SSH Private Key from Azure Key Vault
 
         run: |
@@ -83,7 +83,7 @@ jobs:
       - name: Test SSH Connection
 
         run: ssh -T git@github.com || true
-
+ 
       - name: Set Git User for SSH
 
         run: |
@@ -167,7 +167,7 @@ jobs:
       - name: Unzip artifact for deployment
 
         run: unzip release.zip
-      
+ 
       - name: Login to Azure
 
         uses: azure/login@v2
@@ -179,28 +179,7 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
 
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
-
-      - name: Setup SSH Key for Deploy Stage
-
-        run: |
-
-          mkdir -p ~/.ssh
-
-          SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
-
-          echo "::add-mask::$SECRET_VALUE"
-
-          echo "$SECRET_VALUE" > ~/.ssh/id_rsa
-
-          chmod 600 ~/.ssh/id_rsa
-
-          eval "$(ssh-agent -s)"
-
-          ssh-add ~/.ssh/id_rsa
-
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-       
+ 
       - name: 'Deploy to Azure Web App'
 
         uses: azure/webapps-deploy@v3
@@ -212,5 +191,4 @@ jobs:
           app-name: 'testpythonflask'
 
           slot-name: 'Production'
-
  
