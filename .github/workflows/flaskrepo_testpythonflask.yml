@@ -3,192 +3,123 @@ name: Build and deploy Python app to Azure Web App - testpythonflask
 on:
 
   push:
-
     branches:
-
       - Flaskrepo
-
   workflow_dispatch:
  
 env:
-
   APP_ENV: dev
-
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
-
   ZIPFILE: package.zip
  
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     permissions:
-
       contents: read
-
       id-token: write
  
     steps:
-
       - name: Checkout Parent Repository with Submodules
-
         uses: actions/checkout@v2
-
         with:
-
           submodules: recursive
-
           fetch-depth: 0
  
       - name: 'Az CLI login'
-
         uses: azure/login@v2
-
         with:
-
           client-id: "577b7c0d-8d6e-4402-a074-c2ccf38ad68b"
-
           tenant-id: "93bcb56b-b8ec-4307-bad7-6bf044b763cb"
-
           subscription-id: "2d00bd8e-67d1-43ae-9df2-cf9be20447e0"
  
       - name: Retrieve SSH Private Key from Azure Key Vault
-
         run: |
-
           mkdir -p ~/.ssh
-
           SECRET_VALUE=$(az keyvault secret show --name "ssh" --vault-name "demopython" --query "value" -o tsv | base64 --decode)
-
           echo "::add-mask::$SECRET_VALUE"
-
           echo "$SECRET_VALUE" > ~/.ssh/id_rsa
-
           chmod 600 ~/.ssh/id_rsa
-
           ssh-keyscan github.com >> ~/.ssh/known_hosts
  
       - name: Start SSH Agent and Add Key
-
         run: |
-
           eval "$(ssh-agent -s)"
-
           ssh-add ~/.ssh/id_rsa
  
       - name: Test SSH Connection
-
         run: ssh -T git@github.com || true
  
       - name: Set Git User for SSH
-
         run: |
-
           git config --global user.email "suneetha2201@gmail.com"
-
           git config --global user.name "suni170"
  
       - name: Update and Verify Git Submodules
-
         run: |
-
           git submodule update --init --recursive
-
           git submodule status
  
       - name: Set up Python version
-
         uses: actions/setup-python@v5
 
         with:
-
           python-version: '3.11'
  
       - name: Create and start virtual environment
-
         run: |
-
           python -m venv venv
-
           source venv/bin/activate
  
       - name: Install dependencies
-
         run: pip install -r requirements.txt
- 
-      - name: Zip artifact for deployment (Including Submodules)
 
+      - name: Zip artifact for deployment (Including Submodules)
         run: zip -r release.zip . -x '*.git*' 'venv/*'
  
-      - name: Upload artifact for deployment jobs
-
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
-
         with:
-
           name: python-app
-
-          path: |
-
-            release.zip
+          path: release.zip
  
   deploy:
-
     runs-on: ubuntu-latest
-
     needs: build
-
     environment:
-
       name: 'Production'
-
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
     permissions:
-
       id-token: write
-
       contents: read
  
     steps:
 
       - name: Download artifact from build job
-
         uses: actions/download-artifact@v4
-
         with:
-
           name: python-app
  
       - name: Unzip artifact for deployment
-
         run: unzip release.zip
  
       - name: Login to Azure
-
         uses: azure/login@v2
-
         with:
-
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1445CB15A781497B89E79C5719E169D1 }}
-
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
-
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
+
+      - name: Set Azure App Setting to Disable Build During Deployment
+        run: az webapp config appsettings set --name testpythonflask --resource-group airesources --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
  
       - name: 'Deploy to Azure Web App'
-
         uses: azure/webapps-deploy@v3
-
         id: deploy-to-webapp
-
         with:
-
           app-name: 'testpythonflask'
-
           slot-name: 'Production'
+          package: release.zip  
+
  
