@@ -129,6 +129,5 @@ jobs:
           app-name: 'testpythonflask'
           slot-name: 'Production'
           package: release.zip  
-      
 
  
