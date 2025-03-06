@@ -85,7 +85,7 @@ jobs:
 
     environment:
 
-      name: 'dev'
+      name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     permissions:
