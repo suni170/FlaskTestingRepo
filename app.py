@@ -3,11 +3,11 @@ from child_package.child_script import main  # Import function correctly
 
 app = Flask(__name__)
 
-@app.route('/parent')
+@app.route('/')
 def hello():
     return "hello world this is the testing new file"
 
-@app.route('/')
+@app.route('/child')
 def child():
     try:
         output = main()  # Calling function from child repo
