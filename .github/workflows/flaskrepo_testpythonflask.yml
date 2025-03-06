@@ -11,6 +11,7 @@ env:
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
   ZIPFILE: package.zip
+  AZURE_WEBAPP_NAME: testpythonflask
 
 jobs:
   build-and-deploy:
@@ -73,10 +74,12 @@ jobs:
       - name: Zip artifact for deployment (Including Submodules)
         run: zip -r release.zip . -x '*.git*' 'venv/*'
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
+      - name: Building web app
+        uses: azure/appservice-build@v2
+        
+      - name: Deploy web App using GH Action azure/webapps-deploy
+        uses: azure/webapps-deploy@v2
         with:
-          app-name: 'testpythonflask'
-          slot-name: 'Production'
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_CREDENTIALS }}
           package: release.zip
