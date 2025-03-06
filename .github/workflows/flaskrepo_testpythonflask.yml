@@ -72,12 +72,18 @@ jobs:
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
  
  
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt --target packages
 
-      - name: Zip artifact for deployment (Including Submodules)
+      - name: Copy Installed Packages
+        run: cp -r packages/* .
+
+      - name: Create Release Artifact
         run: zip -r release.zip . -x '*.git*' 'venv/*' '*.github/*'
- 
+
+        
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -113,8 +119,8 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5F1C2D4AF1B47D89F26D0B1248D92CC }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F0FA76CE81D94BA49CEE36CBF5A7A403 }}
 
-      - name: Set Azure App Setting to Disable Build During Deployment
-        run: az webapp config appsettings set --name testpythonflask --resource-group AIResources --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+      #- name: Set Azure App Setting to Disable Build During Deployment
+      #   run: az webapp config appsettings set --name testpythonflask --resource-group AIResources --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
  
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
