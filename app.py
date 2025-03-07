@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello():
-    return "this parent file repo on 6th march deployment"
+    return "parent repo"
 
 @app.route('/child')
 def child():
