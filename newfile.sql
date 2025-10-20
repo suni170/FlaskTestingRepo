@@ -1,0 +1,8 @@
+CREATE OR REPLACE PROCEDURE output_message(message VARCHAR)
+RETURNS VARCHAR NOT NULL
+LANGUAGE SQL
+AS
+BEGIN
+  RETURN concat_ws(' ',message,'data');
+END;
+
